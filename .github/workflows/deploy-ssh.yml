@@ -10,12 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Install OpenVPN
+    - name: Install OpenVPN
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openvpn
+
+    # Step 2: Set up the VPN connection using .ovpn file
+    - name: Connect to VPN
+      run: |
+        # Write the .ovpn file to the disk
+        echo "${{ secrets.VPN_OVPN_FILE }}" > vpnconfig.ovpn
+        
+        # Add the VPN username and password to a file for authentication
+        echo -e "${{ secrets.VPN_USERNAME }}\n${{ secrets.VPN_PASSWORD }}" > vpn_credentials.txt
+        
+        # Start the OpenVPN connection with the credentials file
+        sudo openvpn --config vpnconfig.ovpn --auth-user-pass vpn_credentials.txt &
+        
+        # Wait for VPN to establish (adjust the time as needed)
+        sleep 30  # Adjust as needed depending on the time it takes to connect
+        
+    # Step 3: SSH into the server to build and deploy
     - name: SSH into Server to build and deploy
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
-        #  key: ${{ secrets.SSH_KEY_TEST }}
         password: ${{ secrets.SSH_PASSWORD }}
         script: |
-          ls -l 
+          ls -l
+
